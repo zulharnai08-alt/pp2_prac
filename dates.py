@@ -1,13 +1,15 @@
-def fibonacci(limit): 
-    a, b = 0, 1
-    while a <= limit:
-        yield a
-        # take the variables one at a time
-        a, b = b, a + b
+from datetime import datetime, timedelta
+
+
+def show_dates(): 
+    today = datetime.now()
+    yesterday = today - timedelta(days=1)
+    tomorrow = today + timedelta(days=1)
+
+    print("Today:     ", today.strftime("%Y-%m-%d"))
+    print("Yesterday: ", yesterday.strftime("%Y-%m-%d"))
+    print("Tomorrow:  ", tomorrow.strftime("%Y-%m-%d"))
 
 
 if __name__ == "__main__":
-    print("Fibonacci sequence up to 100:")
-
-    for number in fibonacci(100):
-        print(number)
+    show_dates()
