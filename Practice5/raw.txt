@@ -1,0 +1,35 @@
+import re
+import json
+
+# Читаем файл чека | Read receipt file
+with open("raw.txt", "r", encoding="utf-8") as file:
+    text = file.read()  # Сохраняем текст в переменную | Save text to variable
+
+# 1. Извлекаем все цены | Get all prices
+prices = re.findall(r'\d+\.\d{2}', text)  # Ищем числа типа 12.34 | Find numbers like 12.34
+
+# 2. Извлекаем названия товаров | Get product names
+products = re.findall(r'([A-Za-z ]+)\s+\d+\.\d{2}', text)  # Слова перед ценой | Words before price
+
+# 3. Считаем общую сумму | Calculate total
+total = sum(float(price) for price in prices)  # Складываем все цены | Add all prices
+
+# 4. Извлекаем дату и время | Get date and time
+date = re.findall(r'\d{2}/\d{2}/\d{4}', text)  # Ищем дату | Find date
+time = re.findall(r'\d{2}:\d{2}', text)  # Ищем время | Find time
+
+# 5. Находим способ оплаты | Find payment method
+payment = re.findall(r'(Cash|Card|Visa|MasterCard)', text)  # Ищем тип оплаты | Find payment type
+
+# 6. Создаем структурированный результат | Create structured result
+result = {
+    "products": products,  # Список товаров | List of products
+    "prices": prices,  # Список цен | List of prices
+    "total": total,  # Общая сумма | Total amount
+    "date": date[0] if date else None,  # Первая найденная дата | First date
+    "time": time[0] if time else None,  # Первое найденное время | First time
+    "payment_method": payment[0] if payment else None  # Способ оплаты | Payment method
+}
+
+# Печатаем результат в формате JSON | Print result as JSON
+print(json.dumps(result, indent=4))
