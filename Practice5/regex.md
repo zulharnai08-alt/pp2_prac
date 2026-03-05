@@ -1,53 +1,66 @@
 import re
-import json
 
-# Читаем файл с чеком | Read receipt file
-with open("raw.txt", "r", encoding="utf-8") as file:
-    text = file.read()
+# ---------------- 1 ----------------
+# a затем 0 или больше b | a then zero or more b
+text1 = "abbb"
+pattern1 = r'ab*'
+print("1:", bool(re.fullmatch(pattern1, text1)))
 
-# Разделяем текст на строки | Split text into lines
-lines = text.split("\n")
+# ---------------- 2 ----------------
+# a затем 2 или 3 b | a then two or three b
+text2 = "abbb"
+pattern2 = r'ab{2,3}'
+print("2:", bool(re.fullmatch(pattern2, text2)))
 
-products = []   # список товаров | list of products
-prices = []     # список цен | list of prices
+# ---------------- 3 ----------------
+# маленькие буквы соединенные _ | lowercase letters with underscore
+text3 = "hello_world test_string example"
+pattern3 = r'[a-z]+_[a-z]+'
+print("3:", re.findall(pattern3, text3))
 
-# Regex для цены | regex for price
-price_pattern = re.compile(r'\d+\.\d{2}')
+# ---------------- 4 ----------------
+# одна большая буква затем маленькие | one uppercase then lowercase
+text4 = "Hello World Python"
+pattern4 = r'[A-Z][a-z]+'
+print("4:", re.findall(pattern4, text4))
 
-# Ищем товары и цены | find products and prices
-for line in lines:
-    price_match = price_pattern.search(line)
+# ---------------- 5 ----------------
+# строка начинается с a и заканчивается b | start with a end with b
+text5 = "axxxb"
+pattern5 = r'a.*b'
+print("5:", bool(re.fullmatch(pattern5, text5)))
 
-    if price_match:
-        price = float(price_match.group())  # найденная цена | found price
-        prices.append(price)
+# ---------------- 6 ----------------
+# заменить пробел , . на : | replace space comma dot with colon
+text6 = "Hello, world. Python is fun"
+result6 = re.sub(r'[ ,.]', ':', text6)
+print("6:", result6)
 
-        # Убираем цену из строки чтобы получить название | remove price to get product name
-        product = line.replace(price_match.group(), "").strip()
-        if product:
-            products.append(product)
+# ---------------- 7 ----------------
+# snake_case → camelCase
+# перевод snake case в camel case
+text7 = "hello_world_python"
 
-# Считаем общую сумму | calculate total
-total = sum(prices)
+words = text7.split("_")
+camel = words[0] + ''.join(word.capitalize() for word in words[1:])
+print("7:", camel)
 
-# Regex для даты | regex for date
-date_match = re.search(r'\d{2}/\d{2}/\d{4}', text)
+# ---------------- 8 ----------------
+# разделить строку по заглавным буквам | split at uppercase letters
+text8 = "HelloWorldPython"
+result8 = re.split(r'(?=[A-Z])', text8)
+print("8:", result8)
 
-# Regex для времени | regex for time
-time_match = re.search(r'\d{2}:\d{2}', text)
+# ---------------- 9 ----------------
+# вставить пробелы перед заглавными буквами | insert space before capital
+text9 = "HelloWorldPython"
+result9 = re.sub(r'(?<!^)(?=[A-Z])', ' ', text9)
+print("9:", result9)
 
-# Regex для способа оплаты | regex for payment method
-payment_match = re.search(r'(Cash|Card|Visa|MasterCard)', text, re.IGNORECASE)
+# ---------------- 10 ----------------
+# camelCase → snake_case
+# перевод camel case в snake case
+text10 = "helloWorldPython"
 
-# Формируем результат | create result
-result = {
-    "products": products,
-    "prices": prices,
-    "total": total,
-    "date": date_match.group() if date_match else None,
-    "time": time_match.group() if time_match else None,
-    "payment_method": payment_match.group() if payment_match else None
-}
-
-# Печатаем результат красиво | print result nicely
-print(json.dumps(result, indent=4))
+snake = re.sub(r'([A-Z])', r'_\1', text10).lower()
+print("10:", snake)
