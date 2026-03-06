@@ -1,66 +1,54 @@
 import re
 import json
 
-# читаем текстовый файл | Read receipt text file
-with open("raw.txt", "r", encoding="utf-8") as file:
-    text = file.read()
+# 1. Ввод текста чека с многострочным input
+print("Вставьте текст чека. Для окончания ввода нажмите Enter два раза:")
+lines = []
+while True:
+    line = input()
+    if line == "":
+        break
+    lines.append(line)
 
-lines = text.split("\n")
+text = "\n".join(lines)
 
+# 2. Извлечение цен после "Стоимость"
+prices = [float(p.replace(" ", "").replace(",", ".")) 
+          for p in re.findall(r'Стоимость\s+([\d\s]+,\d{2})', text)]
+
+# 3. Извлечение названий продуктов (строка перед количеством x цена)
 products = []
-prices = []
-
-# regex шаблон для цены | regex pattern for price
-price_pattern = re.compile(r'\d[\d\s]*,\d{2}')
-
-# перебор всех строк чека | iterate through receipt lines
 for i, line in enumerate(lines):
+    if re.search(r'\d+,\d{2}', line) and 'x' in line:
+        product_line = lines[i-1].strip()
+        products.append(product_line)
 
-    # проверяем строку на цену | check line for price
-    price_match = price_pattern.fullmatch(line.strip())
+# 4. Общая сумма
+total_amount = sum(prices)
 
-    if price_match:
+# 5. Дата и время
+date_match = re.search(r'\b\d{2}\.\d{2}\.\d{4}\b', text)
+time_match = re.search(r'\b\d{2}:\d{2}:\d{2}\b', text)
+date = date_match.group(0) if date_match else None
+time = time_match.group(0) if time_match else None
 
-        if i > 0 and "Стоимость" in lines[i-1]:
-            continue
+# 6. Способ оплаты
+payment_match = re.search(r'\b(Банковская карта|CASH|CARD|CREDIT|DEBIT)\b', text, re.IGNORECASE)
+payment_method = payment_match.group(0) if payment_match else None
 
-        price = price_match.group().replace(" ", "").replace(",", ".")
-        prices.append(float(price))
-
-        # предполагаем строку товара | assume product line above
-        product = lines[i-2].strip()
-
-        # проверяем номер позиции товара | check product index number
-        if re.match(r'\d+\.', product):
-            product = lines[i-1].strip()
-
-        products.append(product)
-
-# считаем общую сумму | calculate total sum
-total = sum(prices)
-
-# ищем дату и время чека | find receipt date time
-datetime_match = re.search(r'\d{2}\.\d{2}\.\d{4}\s+\d{2}:\d{2}:\d{2}', text)
-
-date = None
-time = None
-
-if datetime_match:
-    date, time = datetime_match.group().split()
-
-# ищем способ оплаты | find payment method
-payment_match = re.search(r'(Банковская карта|Cash|Card)', text)
-
-payment_method = payment_match.group() if payment_match else None
-
-# создаем структурированный результат | create structured result
-result = {
+# 7. Структура JSON
+receipt_data = {
     "products": products,
     "prices": prices,
-    "total": total,
+    "total": total_amount,
     "date": date,
     "time": time,
     "payment_method": payment_method
 }
 
-print(json.dumps(result, indent=4, ensure_ascii=False))
+# 8. Сохраняем в файл (по желанию)
+with open('parsed_receipt.json', 'w', encoding='utf-8') as json_file:
+    json.dump(receipt_data, json_file, ensure_ascii=False, indent=4)
+
+# 9. Печать на экран
+print(json.dumps(receipt_data, ensure_ascii=False, indent=4))
