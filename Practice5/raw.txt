@@ -1,60 +1,66 @@
 import re
 import json
 
-# читаем файл | read receipt file
+# читаем текстовый файл | Read receipt text file
 with open("raw.txt", "r", encoding="utf-8") as file:
-    text = file.read()
+    text = file.read()
 
 lines = text.split("\n")
 
-products = []   # список товаров | list of products
-prices = []     # список цен | list of prices
+products = []
+prices = []
 
-# regex для цены | regex for price
+# regex шаблон для цены | regex pattern for price
 price_pattern = re.compile(r'\d[\d\s]*,\d{2}')
 
+# перебор всех строк чека | iterate through receipt lines
 for i, line in enumerate(lines):
 
-    # ищем цену | find price
-    price_match = price_pattern.fullmatch(line.strip())
+    # проверяем строку на цену | check line for price
+    price_match = price_pattern.fullmatch(line.strip())
 
-    if price_match:
+    if price_match:
 
-        price = price_match.group().replace(" ", "").replace(",", ".")
-        prices.append(float(price))
+        if i > 0 and "Стоимость" in lines[i-1]:
+            continue
 
-        # предыдущая строка = товар | previous line is product
-        product = lines[i-2].strip()
+        price = price_match.group().replace(" ", "").replace(",", ".")
+        prices.append(float(price))
 
-        if product and not product.isdigit():
-            products.append(product)
+        # предполагаем строку товара | assume product line above
+        product = lines[i-2].strip()
 
-# считаем сумму | calculate total
+        # проверяем номер позиции товара | check product index number
+        if re.match(r'\d+\.', product):
+            product = lines[i-1].strip()
+
+        products.append(product)
+
+# считаем общую сумму | calculate total sum
 total = sum(prices)
 
-# ищем дату и время | find date and time
+# ищем дату и время чека | find receipt date time
 datetime_match = re.search(r'\d{2}\.\d{2}\.\d{4}\s+\d{2}:\d{2}:\d{2}', text)
 
 date = None
 time = None
 
 if datetime_match:
-    date, time = datetime_match.group().split()
+    date, time = datetime_match.group().split()
 
 # ищем способ оплаты | find payment method
 payment_match = re.search(r'(Банковская карта|Cash|Card)', text)
 
 payment_method = payment_match.group() if payment_match else None
 
-# структурированный результат | structured result
+# создаем структурированный результат | create structured result
 result = {
-    "products": products,
-    "prices": prices,
-    "total": total,
-    "date": date,
-    "time": time,
-    "payment_method": payment_method
+    "products": products,
+    "prices": prices,
+    "total": total,
+    "date": date,
+    "time": time,
+    "payment_method": payment_method
 }
 
-# вывод JSON | print JSON
 print(json.dumps(result, indent=4, ensure_ascii=False))
