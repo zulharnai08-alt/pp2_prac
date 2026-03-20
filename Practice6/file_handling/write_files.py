@@ -1,13 +1,12 @@
-# Read file (A1 level)
+# write
+with open("example.txt", "w") as file:
+    file.write("Hello\n")
 
-# open file and write all text
-file = open("example.txt", "w")
+# append
+with open("example.txt", "a") as file:
+    file.write("New line\n")
 
-# read content
-text = file.read()
-
-# print content
-print(text)
-
-# close file
-file.close()
+# read
+with open("example.txt", "r") as file:
+    text = file.read()
+    print(text)
