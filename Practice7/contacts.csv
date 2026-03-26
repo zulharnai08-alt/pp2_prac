@@ -1,0 +1,10 @@
+CREATE TABLE Users (
+    first_name VARCHAR(50),
+    phone VARCHAR(20)
+);
+
+INSERT INTO Users (first_name, phone) VALUES ('Дияр', '111111111');
+INSERT INTO Users (first_name, phone) VALUES ('Алан', '222222222');
+INSERT INTO Users (first_name, phone) VALUES ('Макс', '333333333');
+
+SELECT * FROM Users;
