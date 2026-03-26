@@ -1,8 +1,7 @@
-# config.py
 DB_CONFIG = {
-    'host': 'localhost',
-    'port': 5432,
-    'database': 'phonebook_db',
-    'user': 'postgres',
-    'password': 'your_password' 
+    "dbname": "phonebook_db",
+    "user": "postgres",
+    "password": "Pass1234",
+    "host": "localhost",
+    "port": "5432"
 }
