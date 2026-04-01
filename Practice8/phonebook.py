@@ -1,92 +1,59 @@
--- Insert or update user data
-CREATE OR REPLACE PROCEDURE insert_or_update_user(
-    IN p_name TEXT,
-    IN p_surname TEXT,
-    IN p_phone TEXT
-)
-LANGUAGE plpgsql
-AS $$
-BEGIN
-    IF EXISTS (
-        SELECT 1
-        FROM phonebook
-        WHERE name = p_name AND surname = p_surname
-    ) THEN
-        UPDATE phonebook
-        SET phone = p_phone
-        WHERE name = p_name AND surname = p_surname;
-    ELSE
-        INSERT INTO phonebook(name, surname, phone)
-        VALUES (p_name, p_surname, p_phone);
-    END IF;
-END;
-$$;
+from connect import get_connection
 
--- Validate phone before insert
-CREATE OR REPLACE PROCEDURE insert_many_users(
-    IN p_names TEXT[],
-    IN p_surnames TEXT[],
-    IN p_phones TEXT[],
-    OUT incorrect_data JSONB
-)
-LANGUAGE plpgsql
-AS $$
-DECLARE
-    i INT := 1;
-    v_len INT;
-BEGIN
-    incorrect_data := '[]'::jsonb;
+def show_rows(rows):
+    # Print rows in console
+    for row in rows:
+        print(row)
 
-    v_len := COALESCE(array_length(p_names, 1), 0);
+def search_by_pattern(pattern):
+    # Show matching rows here
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM search_phonebook(%s)", (pattern,))
+    rows = cur.fetchall()
+    show_rows(rows)
+    cur.close()
+    conn.close()
 
-    IF array_length(p_surnames, 1) <> v_len
-       OR array_length(p_phones, 1) <> v_len THEN
-        RAISE EXCEPTION 'Array lengths must be equal';
-    END IF;
+def add_or_update_user(name, surname, phone):
+    # Use procedure for update
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("CALL insert_or_update_user(%s, %s, %s)", (name, surname, phone))
+    conn.commit()
+    cur.close()
+    conn.close()
 
-    WHILE i <= v_len LOOP
-        IF p_phones[i] ~ '^\+?[0-9]{10,15}$' THEN
-            IF EXISTS (
-                SELECT 1
-                FROM phonebook
-                WHERE name = p_names[i] AND surname = p_surnames[i]
-            ) THEN
-                UPDATE phonebook
-                SET phone = p_phones[i]
-                WHERE name = p_names[i] AND surname = p_surnames[i];
-            ELSE
-                INSERT INTO phonebook(name, surname, phone)
-                VALUES (p_names[i], p_surnames[i], p_phones[i]);
-            END IF;
-        ELSE
-            incorrect_data := incorrect_data || jsonb_build_array(
-                jsonb_build_object(
-                    'name', p_names[i],
-                    'surname', p_surnames[i],
-                    'phone', p_phones[i]
-                )
-            );
-        END IF;
+def add_many_users(names, surnames, phones):
+    # Insert many users now
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("CALL insert_many_users(%s, %s, %s)", (names, surnames, phones))
+    invalid_data = cur.fetchone()
+    conn.commit()
+    cur.close()
+    conn.close()
+    return invalid_data[0] if invalid_data else None
 
-        i := i + 1;
-    END LOOP;
-END;
-$$;
+def get_page(limit, offset):
+    # Get page of data
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM paginate_phonebook(%s, %s)", (limit, offset))
+    rows = cur.fetchall()
+    show_rows(rows)
+    cur.close()
+    conn.close()
 
--- Delete rows by filter
-CREATE OR REPLACE PROCEDURE delete_phonebook_data(
-    IN p_name TEXT DEFAULT NULL,
-    IN p_phone TEXT DEFAULT NULL
-)
-LANGUAGE plpgsql
-AS $$
-BEGIN
-    IF p_name IS NULL AND p_phone IS NULL THEN
-        RAISE EXCEPTION 'Name or phone is required';
-    END IF;
+def delete_data(name=None, phone=None):
+    # Delete rows by filter
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("CALL delete_phonebook_data(%s, %s)", (name, phone))
+    conn.commit()
+    cur.close()
+    conn.close()
 
-    DELETE FROM phonebook
-    WHERE (p_name IS NOT NULL AND name = p_name)
-       OR (p_phone IS NOT NULL AND phone = p_phone);
-END;
-$$;
+if __name__ == "__main__":
+    # Start simple menu here
+    print("PhoneBook started")
