@@ -23,8 +23,7 @@ background = pygame.transform.smoothscale(background, (WIDTH, HEIGHT))
 right_hand = pygame.image.load(RIGHT_HAND_PATH).convert_alpha()
 left_hand = pygame.image.load(LEFT_HAND_PATH).convert_alpha()
 
-# Твои руки на картинках направлены вбок.
-# Доворачиваем их так, чтобы в нуле они смотрели вверх (на 12 часов).
+
 right_hand = pygame.transform.rotate(right_hand, 270)    # правая рука -> минуты
 left_hand = pygame.transform.rotate(left_hand, 90)     # левая рука -> секунды
 
