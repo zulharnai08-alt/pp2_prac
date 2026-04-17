@@ -1,4 +1,4 @@
--- 🔎 Поиск по шаблону
+-- Find matching rows.
 CREATE OR REPLACE FUNCTION search_phonebook(p_pattern TEXT)
 RETURNS TABLE(id INT, name TEXT, surname TEXT, phone TEXT)
 LANGUAGE sql
@@ -11,8 +11,7 @@ AS $$
     ORDER BY id;
 $$;
 
-
--- 📄 Пагинация
+-- Show next page.
 CREATE OR REPLACE FUNCTION paginate_phonebook(p_limit INT, p_offset INT)
 RETURNS TABLE(id INT, name TEXT, surname TEXT, phone TEXT)
 LANGUAGE sql
