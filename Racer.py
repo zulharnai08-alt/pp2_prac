@@ -1,125 +1,184 @@
-import pygame, sys
-from pygame.locals import *
+import pygame
+import sys
 import random
+import time
+from pygame.locals import *
 
 pygame.init()
+pygame.mixer.init()
 
-FPS = 60
-FramePerSec = pygame.time.Clock()
+# размеры окна
+a = 400
+b = 600
 
-# Colors
-WHITE = (255, 255, 255)
-BLACK = (0, 0, 0)
+# FPS и таймер
+c = 60
+d = pygame.time.Clock()
 
-# Screen
-SCREEN_WIDTH = 400
-SCREEN_HEIGHT = 600
+# скорость врага
+g = 5
 
-DISPLAYSURF = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-pygame.display.set_caption("Game")
+# счётчики
+t = 0   # Score
+y = 0   # Coins
+u = 5   # Каждые 5 монет скорость увеличивается
 
-# ===== ENEMY =====
-class Enemy(pygame.sprite.Sprite):
+# цвета
+w = (0, 0, 0)
+x = (255, 255, 255)
+z = (255, 0, 0)
+
+# шрифты
+i = pygame.font.SysFont("Verdana", 20)
+o = pygame.font.SysFont("Verdana", 60)
+
+# тексты
+p = o.render("Game Over", True, w)
+
+# пути к картинкам
+v = r"C:\Users\zulha\Downloads\AnimatedStreet.png"
+k = r"C:\Users\zulha\Downloads\Enemy.png"
+l = r"C:\Users\zulha\Downloads\Player.png"
+m = r"C:\Users\zulha\Downloads\coin.png"
+n = r"C:\Users\zulha\Downloads\coin1.png"
+
+# окно игры
+s = pygame.display.set_mode((a, b))
+pygame.display.set_caption("Racer")
+
+# фон
+f = pygame.image.load(v)
+
+# враг
+class A(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
-        self.image = pygame.image.load(r"C:\Users\zulha\OneDrive\Immagini\Снимки экрана\Снимок экрана 2026-04-23 211027.png")
-        self.image = pygame.transform.scale(self.image, (75, 75))
+        self.image = pygame.image.load(k)
         self.rect = self.image.get_rect()
-        self.reset()
+        self.rect.center = (random.randint(40, a - 40), -100)
 
     def move(self):
-        self.rect.move_ip(0, 7)
-        if self.rect.top > SCREEN_HEIGHT:
+        global t
+
+        self.rect.move_ip(0, g)
+
+        if self.rect.top > b:
+            t += 1
             self.reset()
 
     def reset(self):
-        self.rect.center = (random.randint(40, SCREEN_WIDTH-40), 0)
+        self.rect.top = -100
+        self.rect.center = (random.randint(40, a - 40), -100)
 
-    def draw(self, surface):
-        surface.blit(self.image, self.rect)
-
-# ===== PLAYER =====
-class Player(pygame.sprite.Sprite):
+# игрок
+class B(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
-        self.image = pygame.image.load(r"C:\Users\zulha\Downloads\Pygame_rects.png")
-        self.image = pygame.transform.scale(self.image, (50, 50))
+        self.image = pygame.image.load(l)
         self.rect = self.image.get_rect()
         self.rect.center = (160, 520)
 
-    def update(self):
-        pressed_keys = pygame.key.get_pressed()
+    def move(self):
+        key = pygame.key.get_pressed()
 
-        if self.rect.left > 0:
-            if pressed_keys[K_LEFT]:
-                self.rect.move_ip(-5, 0)
+        if key[K_LEFT] and self.rect.left > 0:
+            self.rect.move_ip(-5, 0)
 
-        if self.rect.right < SCREEN_WIDTH:
-            if pressed_keys[K_RIGHT]:
-                self.rect.move_ip(5, 0)
+        if key[K_RIGHT] and self.rect.right < a:
+            self.rect.move_ip(5, 0)
 
-    def draw(self, surface):
-        surface.blit(self.image, self.rect)
-
-# ===== COIN =====
-class Coin(pygame.sprite.Sprite):
+# монета
+class C(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
-        self.image = pygame.image.load(r"C:\Users\zulha\Downloads\OIP.webp")
-        self.image = pygame.transform.scale(self.image, (40, 40))
+        self.a1 = pygame.image.load(m)   # обычная монета
+        self.b1 = pygame.image.load(n)   # красная монета
+        self.image = self.a1
+        self.weight = 1
         self.rect = self.image.get_rect()
         self.reset()
 
+    def reset(self):
+        r = random.randint(0, 1)
+
+        if r == 1:
+            self.image = self.b1
+            self.weight = 3
+        else:
+            self.image = self.a1
+            self.weight = 1
+
+        self.rect = self.image.get_rect()
+        self.rect.top = -50
+        self.rect.center = (random.randint(40, a - 40), -50)
+
     def move(self):
-        self.rect.move_ip(0, 5)
-        if self.rect.top > SCREEN_HEIGHT:
+        self.rect.move_ip(0, g)
+
+        if self.rect.top > b:
             self.reset()
 
-    def reset(self):
-        self.rect.center = (random.randint(40, SCREEN_WIDTH-40), 0)
+# объекты
+j = B()
+q = A()
+r = C()
 
-    def draw(self, surface):
-        surface.blit(self.image, self.rect)
+# группы
+e = pygame.sprite.Group()
+e.add(q)
 
-# ===== OBJECTS =====
-P1 = Player()
-E1 = Enemy()
-C1 = Coin()
+all_sprites = pygame.sprite.Group()
+all_sprites.add(j, q, r)
 
-score = 0
-font = pygame.font.SysFont("Arial", 30)
-
-# ===== GAME LOOP =====
+# цикл игры
 while True:
     for event in pygame.event.get():
         if event.type == QUIT:
             pygame.quit()
             sys.exit()
 
-    P1.update()
-    E1.move()
-    C1.move()
+    # фон
+    s.blit(f, (0, 0))
 
-    # Collision with coin
-    if P1.rect.colliderect(C1.rect):
-        score += 1
-        C1.reset()
+    # счёт
+    score_text = i.render(f"Score: {t}", True, w)
+    coin_text = i.render(f"Coins: {y}", True, w)
+    s.blit(score_text, (10, 10))
+    s.blit(coin_text, (a - 120, 10))
 
-    # Game over (enemy)
-    if P1.rect.colliderect(E1.rect):
-        print("GAME OVER")
+    # движение всех объектов
+    for item in all_sprites:
+        s.blit(item.image, item.rect)
+        item.move()
+
+    # сбор монеты
+    if pygame.sprite.collide_rect(j, r):
+        old_coins = y
+        y += r.weight
+
+        old_level = old_coins // u
+        new_level = y // u
+
+        if new_level > old_level:
+            g += (new_level - old_level)
+
+        r.reset()
+
+    # столкновение с врагом
+    if pygame.sprite.spritecollideany(j, e):
+        try:
+            pygame.mixer.Sound('crash.wav').play()
+        except:
+            pass
+
+        time.sleep(0.5)
+        s.fill(z)
+        s.blit(p, (30, 250))
+        pygame.display.update()
+        time.sleep(2)
+
         pygame.quit()
         sys.exit()
 
-    DISPLAYSURF.fill(WHITE)
-
-    P1.draw(DISPLAYSURF)
-    E1.draw(DISPLAYSURF)
-    C1.draw(DISPLAYSURF)
-
-    # Score
-    score_text = font.render("Score: " + str(score), True, BLACK)
-    DISPLAYSURF.blit(score_text, (300, 10))
-
     pygame.display.update()
-    FramePerSec.tick(FPS)
+    d.tick(c)
