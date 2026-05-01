@@ -1,0 +1,14 @@
+[
+    {
+        "name": "Diar",
+        "email": null,
+        "birthday": "None",
+        "group": "Friends",
+        "phones": [
+            {
+                "phone": "87071112233",
+                "type": "mobile"
+            }
+        ]
+    }
+]
