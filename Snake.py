@@ -1,242 +1,172 @@
-
-import pygame
-import random
-import sys
-
-
-
-CELL_SIZE = 20                  # Размер одной клетки
-GRID_WIDTH = 30                 # Ширина поля в клетках
-GRID_HEIGHT = 20                # Высота поля в клетках
-
-WIDTH = GRID_WIDTH * CELL_SIZE
-HEIGHT = GRID_HEIGHT * CELL_SIZE + 60   # +60 — место под счет и уровень
-
-START_FPS = 8                   # Начальная скорость
-SPEED_UP = 2                    # Увеличение скорости при переходе на уровень выше
-FOODS_FOR_NEXT_LEVEL = 3        # Сколько еды нужно для нового уровня
-
-# Цвета
-WHITE = (245, 245, 245)
-BLACK = (20, 20, 20)
-GREEN = (80, 180, 80)
-DARK_GREEN = (30, 120, 50)
-RED = (220, 70, 70)
-BLUE = (40, 100, 180)
-GRAY = (230, 230, 230)
-
-
+import pygame, random, time, sys
 
 pygame.init()
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Snake")
-clock = pygame.time.Clock()
 
-font_small = pygame.font.SysFont("Arial", 22)
-font_big = pygame.font.SysFont("Arial", 40)
+# размеры
+a = 20
+b = 30
+c = 20
 
+d = b * a
+e = c * a + 60
 
-def draw_text(text, font, color, x, y):
-    """Рисует текст на экране."""
-    img = font.render(text, True, color)
-    screen.blit(img, (x, y))
+# скорость
+f = 8
+g = 2
+h = 3
 
-def grid_to_px(cell):
-    """Перевод координат клетки (x, y) в пиксели."""
-    x, y = cell
-    return x * CELL_SIZE, y * CELL_SIZE + 60  # +60 — сдвиг вниз из-за HUD
+# цвета
+w = (255, 255, 255)
+er = (0, 0, 0)
+g1 = (0, 200, 0)
+t = (200, 0, 0)
+y = (150, 0, 150)
+o = (0, 0, 200)
 
-def is_out_of_bounds(cell):
-    """Проверка выхода за пределы игрового поля."""
-    x, y = cell
-    return x < 0 or x >= GRID_WIDTH or y < 0 or y >= GRID_HEIGHT
+# цвета для клетчатого фона
+bg1 = (245, 245, 245)
+bg2 = (230, 230, 230)
 
-def spawn_food(snake):
-    """
-    Создает еду в случайной свободной клетке.
-    Еда не должна попадать на змейку.
-    """
-    free_cells = []
+# экран
+sc = pygame.display.set_mode((d, e))
+cl = pygame.time.Clock()
 
-    for x in range(GRID_WIDTH):
-        for y in range(GRID_HEIGHT):
-            if (x, y) not in snake:
-                free_cells.append((x, y))
+# шрифт
+font = pygame.font.SysFont("Arial", 22)
 
-    # Если свободных клеток нет, вернуть None
-    if not free_cells:
+# еда (случайная + вес + таймер)
+def q(s):
+    r = [(i, j) for i in range(b) for j in range(c) if (i, j) not in s]
+    if not r:
         return None
 
-    return random.choice(free_cells)
+    p = random.choice(r)
 
-def reset_game():
-    """Сбрасывает игру в начальное состояние."""
-    snake = [(5, 5), (4, 5), (3, 5)]   # Голова — первый элемент списка
-    direction = "RIGHT"
-    next_direction = "RIGHT"
+    if random.randint(0, 1):
+        return {"p": p, "v": 10, "c": t, "tm": time.time(), "l": 5}
+    else:
+        return {"p": p, "v": 30, "c": y, "tm": time.time(), "l": 3}
 
-    food = spawn_food(snake)
+# старт игры
+def u():
+    s = [(5, 5), (4, 5), (3, 5)]
+    d1 = "R"
+    d2 = "R"
+    f1 = q(s)
+    sc1 = 0
+    lv = 1
+    fe = 0
+    sp = f
+    go = False
+    return s, d1, d2, f1, sc1, lv, fe, sp, go
 
-    score = 0
-    level = 1
-    foods_eaten = 0
-    fps = START_FPS
-    game_over = False
+# движение головы
+def m(hh, d1):
+    x, y = hh
+    if d1 == "U": return (x, y - 1)
+    if d1 == "D": return (x, y + 1)
+    if d1 == "L": return (x - 1, y)
+    if d1 == "R": return (x + 1, y)
 
-    return snake, direction, next_direction, food, score, level, foods_eaten, fps, game_over
+# границы
+def z(p):
+    x, y = p
+    return x < 0 or x >= b or y < 0 or y >= c
 
-def get_new_head(head, direction):
-    """Вычисляет новую позицию головы змейки."""
-    x, y = head
+# фон
+def bg():
+    for i in range(b):
+        for j in range(c):
+            col = bg1 if (i + j) % 2 == 0 else bg2
+            pygame.draw.rect(sc, col, (i * a, j * a + 60, a, a))
 
-    if direction == "UP":
-        return (x, y - 1)
-    elif direction == "DOWN":
-        return (x, y + 1)
-    elif direction == "LEFT":
-        return (x - 1, y)
-    elif direction == "RIGHT":
-        return (x + 1, y)
+# змейка
+def s1(s):
+    for x, y in s:
+        pygame.draw.rect(sc, g1, (x * a, y * a + 60, a, a))
 
-def draw_grid():
-    """Рисует сетку игрового поля."""
-    for x in range(GRID_WIDTH):
-        for y in range(GRID_HEIGHT):
-            rect = pygame.Rect(x * CELL_SIZE, y * CELL_SIZE + 60, CELL_SIZE, CELL_SIZE)
-            pygame.draw.rect(screen, GRAY, rect, 1)
+# еда
+def f2(f1):
+    if f1:
+        x, y = f1["p"]
+        pygame.draw.rect(sc, f1["c"], (x * a, y * a + 60, a, a))
 
-def draw_snake(snake):
-    """Рисует змейку."""
-    for i, cell in enumerate(snake):
-        x, y = grid_to_px(cell)
-        rect = pygame.Rect(x, y, CELL_SIZE, CELL_SIZE)
+# hud
+def h1(sc1, lv):
+    pygame.draw.rect(sc, o, (0, 0, d, 60))
 
-        if i == 0:
-            pygame.draw.rect(screen, DARK_GREEN, rect)  # Голова
+    coins_text = font.render(f"Coins: {sc1}", True, er)
+    level_text = font.render(f"Level: {lv}", True, er)
+
+    sc.blit(level_text, (20, 18))
+    sc.blit(coins_text, (d - coins_text.get_width() - 20, 18))
+
+# запуск
+s, d1, d2, f1, sc1, lv, fe, sp, go = u()
+
+while True:
+    for ev in pygame.event.get():
+        if ev.type == pygame.QUIT:
+            pygame.quit()
+            sys.exit()
+
+        if ev.type == pygame.KEYDOWN:
+            if ev.key == pygame.K_UP: d2 = "U"
+            if ev.key == pygame.K_DOWN: d2 = "D"
+            if ev.key == pygame.K_LEFT: d2 = "L"
+            if ev.key == pygame.K_RIGHT: d2 = "R"
+
+    if not go:
+        op = {"U": "D", "D": "U", "L": "R", "R": "L"}
+        if d2 != op[d1]:
+            d1 = d2
+
+        nh = m(s[0], d1)
+
+        if z(nh) or nh in s:
+            go = True
         else:
-            pygame.draw.rect(screen, GREEN, rect)       # Тело
+            s.insert(0, nh)
 
-def draw_food(food):
-    """Рисует еду."""
-    if food is None:
-        return
+            if f1 and nh == f1["p"]:
+                sc1 += f1["v"]
+                fe += 1
 
-    x, y = grid_to_px(food)
-    rect = pygame.Rect(x, y, CELL_SIZE, CELL_SIZE)
-    pygame.draw.rect(screen, RED, rect)
+                if fe % h == 0:
+                    lv += 1
+                    sp += g
 
-def draw_hud(score, level, fps):
-    """Рисует верхнюю панель со счетом и уровнем."""
-    hud_rect = pygame.Rect(0, 0, WIDTH, 60)
-    pygame.draw.rect(screen, BLUE, hud_rect)
-
-    draw_text(f"Score: {score}", font_small, WHITE, 20, 18)
-    draw_text(f"Level: {level}", font_small, WHITE, 150, 18)
-    draw_text(f"Speed: {fps}", font_small, WHITE, 260, 18)
-
-def draw_game_over(score):
-    """Экран после проигрыша."""
-    overlay = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
-    overlay.fill((0, 0, 0, 140))
-    screen.blit(overlay, (0, 0))
-
-    msg1 = font_big.render("GAME OVER", True, WHITE)
-    msg2 = font_small.render(f"Final score: {score}", True, WHITE)
-    msg3 = font_small.render("Press R to restart or ESC to quit", True, WHITE)
-
-    screen.blit(msg1, (WIDTH // 2 - msg1.get_width() // 2, HEIGHT // 2 - 60))
-    screen.blit(msg2, (WIDTH // 2 - msg2.get_width() // 2, HEIGHT // 2 - 10))
-    screen.blit(msg3, (WIDTH // 2 - msg3.get_width() // 2, HEIGHT // 2 + 25))
-
-
-
-snake, direction, next_direction, food, score, level, foods_eaten, fps, game_over = reset_game()
-
-
-
-running = True
-while running:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-
-        if event.type == pygame.KEYDOWN:
-            # Выход из игры
-            if event.key == pygame.K_ESCAPE:
-                running = False
-
-            # Перезапуск после проигрыша
-            if game_over and event.key == pygame.K_r:
-                snake, direction, next_direction, food, score, level, foods_eaten, fps, game_over = reset_game()
-
-            # Изменение направления
-            if not game_over:
-                if event.key == pygame.K_UP:
-                    next_direction = "UP"
-                elif event.key == pygame.K_DOWN:
-                    next_direction = "DOWN"
-                elif event.key == pygame.K_LEFT:
-                    next_direction = "LEFT"
-                elif event.key == pygame.K_RIGHT:
-                    next_direction = "RIGHT"
-
-   
-    if not game_over:
-        # Запрещаем прямой разворот на 180 градусов
-        opposite = {
-            "UP": "DOWN",
-            "DOWN": "UP",
-            "LEFT": "RIGHT",
-            "RIGHT": "LEFT"
-        }
-
-        if next_direction != opposite[direction]:
-            direction = next_direction
-
-        # Считаем новую голову змейки
-        new_head = get_new_head(snake[0], direction)
-
-        # Проверка на столкновение со стеной
-        if is_out_of_bounds(new_head):
-            game_over = True
-
-        # Проверка на столкновение с собой
-        elif new_head in snake:
-            game_over = True
-
-        else:
-            # Добавляем новую голову в начало списка
-            snake.insert(0, new_head)
-
-            # Если голова попала на еду
-            if new_head == food:
-                score += 10
-                foods_eaten += 1
-
-                # Переход на новый уровень каждые 3 еды
-                if foods_eaten % FOODS_FOR_NEXT_LEVEL == 0:
-                    level += 1
-                    fps += SPEED_UP   # Увеличиваем скорость
-
-                # Создаем новую еду
-                food = spawn_food(snake)
+                f1 = q(s)
             else:
-                # Если еда не съедена, убираем хвост
-                snake.pop()
+                s.pop()
 
-   
-    screen.fill(WHITE)
+        if f1 and time.time() - f1["tm"] > f1["l"]:
+            f1 = q(s)
 
-    draw_hud(score, level, fps)
-    draw_grid()
-    draw_food(food)
-    draw_snake(snake)
+    sc.fill(w)
+    h1(sc1, lv)
+    bg()
+    f2(f1)
+    s1(s)
 
-    if game_over:
-        draw_game_over(score)
+    # GAME OVER
+    if go:
+        sc.fill((255, 0, 0))
 
-    pygame.display.flip()
-    clock.tick(fps)
+        font_big = pygame.font.SysFont("Arial", 50)
+        text = font_big.render("GAME OVER", True, (0, 0, 0))
 
-pygame.quit()
-sys.exit()
+        sc.blit(text, (d//2 - text.get_width()//2, e//2 - 30))
+
+        pygame.display.update()
+        pygame.time.delay(2000)
+
+        pygame.quit()
+        sys.exit()
+
+    pygame.display.update()
+    cl.tick(sp)
+
+#if fe % h == 0:
+#lv += 1
+#sp += g это измененик скорости начальная 8
