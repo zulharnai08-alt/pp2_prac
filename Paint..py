@@ -2,17 +2,17 @@ import pygame
 import sys
 import math
 
-# -----------------------------
-# Настройки окна
-# -----------------------------
-WIDTH, HEIGHT = 900, 600
-WHITE = (255, 255, 255)
-BLACK = (0, 0, 0)
+pygame.init()
 
-# -----------------------------
-# Палитра цветов
-# -----------------------------
-PALETTE = [
+# размеры окна
+a, b = 900, 600
+
+# цвета
+c = (255, 255, 255)   # белый
+d = (0, 0, 0)         # чёрный
+
+# палитра
+e = [
     ("red", (220, 50, 50)),
     ("green", (50, 180, 80)),
     ("blue", (50, 100, 220)),
@@ -21,90 +21,76 @@ PALETTE = [
     ("black", (20, 20, 20)),
 ]
 
-PALETTE_BOX_SIZE = 32
-TOP_PANEL_H = 70
+f = 32   # размер квадрата палитры
+g = 70   # высота верхней панели
 
-# -----------------------------
-# Инициализация pygame
-# -----------------------------
-pygame.init()
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
+# экран
+h = pygame.display.set_mode((a, b))
 pygame.display.set_caption("Paint")
-clock = pygame.time.Clock()
+i = pygame.time.Clock()
 
-font = pygame.font.SysFont("Arial", 18)
+# шрифт
+j = pygame.font.SysFont("Arial", 18)
 
-# Отдельный холст, чтобы рисунок не исчезал
-canvas = pygame.Surface((WIDTH, HEIGHT))
-canvas.fill(WHITE)
+# холст
+k = pygame.Surface((a, b))
+k.fill(c)
 
-# -----------------------------
-# Состояние программы
-# -----------------------------
-mode = "brush"  # brush, rect, square, right_triangle, equilateral_triangle, rhombus, circle, eraser
-current_color = (0, 0, 255)
-brush_size = 6
+# режим и параметры
+l = "brush"
+m = (0, 0, 255)
+n = 6
 
-drawing = False
-start_pos = None
-last_pos = None
-current_mouse_pos = None
+o = False
+p = None
+q = None
+r = None
 
+def s(text, x, y, color=d):
+    """Рисует текст."""
+    img = j.render(text, True, color)
+    h.blit(img, (x, y))
 
-# -----------------------------
-# Вспомогательные функции
-# -----------------------------
-def draw_text(text, x, y, color=BLACK):
-    """Рисует текст на экране."""
-    img = font.render(text, True, color)
-    screen.blit(img, (x, y))
-
-
-def draw_palette():
-    """Рисует палитру цветов в верхней панели."""
+def t():
+    """Рисует палитру цветов."""
     x = 10
     y = 9
-    for _, color in PALETTE:
-        rect = pygame.Rect(x, y, PALETTE_BOX_SIZE, PALETTE_BOX_SIZE)
-        pygame.draw.rect(screen, color, rect)
-        pygame.draw.rect(screen, BLACK, rect, 1)
+    for _, color in e:
+        rect = pygame.Rect(x, y, f, f)
+        pygame.draw.rect(h, color, rect)
+        pygame.draw.rect(h, d, rect, 1)
 
-        # Подсветка выбранного цвета
-        if color == current_color and mode != "eraser":
-            pygame.draw.rect(screen, (255, 255, 255), rect, 3)
+        if color == m and l != "eraser":
+            pygame.draw.rect(h, c, rect, 3)
 
-        x += PALETTE_BOX_SIZE + 8
+        x += f + 8
 
-
-def get_palette_color(pos):
-    """Возвращает цвет, если клик был по палитре."""
+def u(pos):
+    """Проверяет, был ли клик по палитре."""
     x, y = pos
-    if y > TOP_PANEL_H:
+    if y > g:
         return None
 
     px = 10
     py = 9
-    for _, color in PALETTE:
-        rect = pygame.Rect(px, py, PALETTE_BOX_SIZE, PALETTE_BOX_SIZE)
+    for _, color in e:
+        rect = pygame.Rect(px, py, f, f)
         if rect.collidepoint(pos):
             return color
-        px += PALETTE_BOX_SIZE + 8
+        px += f + 8
 
     return None
 
-
-def draw_free_line(surface, color, width, start, end):
-    """Рисует линию между двумя точками."""
+def v(surface, color, width, start, end):
+    """Рисует линию."""
     pygame.draw.line(surface, color, start, end, width)
     pygame.draw.circle(surface, color, end, width // 2)
 
-
-def draw_shape(surface, tool, color, width, start, end):
-    """Рисует выбранную фигуру по двум точкам: start и end."""
+def w(surface, tool, color, width, start, end):
+    """Рисует фигуру."""
     rect = pygame.Rect(start, (end[0] - start[0], end[1] - start[1]))
     rect.normalize()
 
-    # Если размер нулевой, рисовать нечего
     if rect.width == 0 or rect.height == 0:
         return
 
@@ -112,27 +98,22 @@ def draw_shape(surface, tool, color, width, start, end):
         pygame.draw.rect(surface, color, rect, width)
 
     elif tool == "square":
-        # Квадрат: берём меньшую сторону прямоугольника
         side = min(rect.width, rect.height)
-        square_rect = pygame.Rect(rect.topleft, (side, side))
-        pygame.draw.rect(surface, color, square_rect, width)
+        sq = pygame.Rect(rect.topleft, (side, side))
+        pygame.draw.rect(surface, color, sq, width)
 
     elif tool == "circle":
-        # Круг вписываем в прямоугольник
         radius = min(rect.width, rect.height) // 2
         if radius > 0:
             pygame.draw.circle(surface, color, rect.center, radius, width)
 
     elif tool == "right_triangle":
-        # Прямоугольный треугольник
         points = [rect.topleft, rect.bottomleft, rect.bottomright]
         pygame.draw.polygon(surface, color, points, width)
 
     elif tool == "equilateral_triangle":
-        # Равносторонний треугольник
-        # Высота равностороннего треугольника = side * sqrt(3) / 2
-        max_side_by_height = int(rect.height / 0.8660254)
-        side = max(1, min(rect.width, max_side_by_height))
+        side = min(rect.width, int(rect.height / 0.8660254))
+        side = max(1, side)
         tri_h = int(side * 0.8660254)
 
         top = (rect.centerx, rect.top)
@@ -142,159 +123,111 @@ def draw_shape(surface, tool, color, width, start, end):
         pygame.draw.polygon(surface, color, [top, left, right], width)
 
     elif tool == "rhombus":
-        # Ромб
         points = [rect.midtop, rect.midright, rect.midbottom, rect.midleft]
         pygame.draw.polygon(surface, color, points, width)
 
-
-# -----------------------------
-# Главный цикл
-# -----------------------------
-running = True
-while running:
-    current_mouse_pos = pygame.mouse.get_pos()
+while True:
+    r = pygame.mouse.get_pos()
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
-            running = False
+            pygame.quit()
+            sys.exit()
 
-        # -----------------------------
-        # Управление с клавиатуры
-        # -----------------------------
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
-                running = False
+                pygame.quit()
+                sys.exit()
 
-            # Инструменты
-            elif event.key == pygame.K_1:
-                mode = "brush"
+            if event.key == pygame.K_1:
+                l = "brush"
             elif event.key == pygame.K_2:
-                mode = "rect"
+                l = "rect"
             elif event.key == pygame.K_3:
-                mode = "square"
+                l = "square"
             elif event.key == pygame.K_4:
-                mode = "right_triangle"
+                l = "right_triangle"
             elif event.key == pygame.K_5:
-                mode = "equilateral_triangle"
+                l = "equilateral_triangle"
             elif event.key == pygame.K_6:
-                mode = "rhombus"
+                l = "rhombus"
             elif event.key == pygame.K_7:
-                mode = "circle"
+                l = "circle"
             elif event.key == pygame.K_8:
-                mode = "eraser"
+                l = "eraser"
 
-            # Очистка холста
             elif event.key == pygame.K_c:
-                canvas.fill(WHITE)
+                k.fill(c)
 
-            # Размер кисти
             elif event.key == pygame.K_EQUALS or event.key == pygame.K_PLUS:
-                brush_size = min(50, brush_size + 1)
+                n = min(50, n + 1)
             elif event.key == pygame.K_MINUS:
-                brush_size = max(1, brush_size - 1)
+                n = max(1, n - 1)
 
-            # Быстрый выбор цвета с клавиатуры
             elif event.key == pygame.K_r:
-                current_color = (220, 50, 50)
-                mode = "brush"
+                m = (220, 50, 50)
+                l = "brush"
             elif event.key == pygame.K_g:
-                current_color = (50, 180, 80)
-                mode = "brush"
+                m = (50, 180, 80)
+                l = "brush"
             elif event.key == pygame.K_b:
-                current_color = (50, 100, 220)
-                mode = "brush"
+                m = (50, 100, 220)
+                l = "brush"
             elif event.key == pygame.K_k:
-                current_color = (20, 20, 20)
-                mode = "brush"
+                m = (20, 20, 20)
+                l = "brush"
             elif event.key == pygame.K_y:
-                current_color = (240, 200, 60)
-                mode = "brush"
+                m = (240, 200, 60)
+                l = "brush"
 
-        # -----------------------------
-        # Нажатие мыши
-        # -----------------------------
         if event.type == pygame.MOUSEBUTTONDOWN:
-            # Если кликнули по палитре — меняем цвет
-            chosen_color = get_palette_color(event.pos)
-            if chosen_color is not None:
-                current_color = chosen_color
-                mode = "brush"
+            color = u(event.pos)
+            if color is not None:
+                m = color
+                l = "brush"
                 continue
 
-            # ЛКМ — начинаем рисование
             if event.button == 1:
-                drawing = True
-                start_pos = event.pos
-                last_pos = event.pos
+                o = True
+                p = event.pos
+                q = event.pos
 
-                # Для кисти и ластика сразу ставим точку
-                if mode == "brush":
-                    pygame.draw.circle(canvas, current_color, event.pos, brush_size // 2)
-                elif mode == "eraser":
-                    pygame.draw.circle(canvas, WHITE, event.pos, brush_size // 2)
+                if l == "brush":
+                    pygame.draw.circle(k, m, event.pos, n // 2)
+                elif l == "eraser":
+                    pygame.draw.circle(k, c, event.pos, n // 2)
 
-        # -----------------------------
-        # Движение мыши
-        # -----------------------------
         if event.type == pygame.MOUSEMOTION:
-            if drawing and mode in ("brush", "eraser"):
-                # Для кисти и ластика рисуем линию
-                color = current_color if mode == "brush" else WHITE
-                draw_free_line(canvas, color, brush_size, last_pos, event.pos)
-                last_pos = event.pos
+            if o and l in ("brush", "eraser"):
+                color = m if l == "brush" else c
+                v(k, color, n, q, event.pos)
+                q = event.pos
 
-        # -----------------------------
-        # Отпускание мыши
-        # -----------------------------
         if event.type == pygame.MOUSEBUTTONUP:
-            if event.button == 1 and drawing:
-                # Фигуры рисуем только после отпускания кнопки мыши
-                if mode in ("rect", "square", "circle", "right_triangle", "equilateral_triangle", "rhombus"):
-                    draw_shape(canvas, mode, current_color, brush_size, start_pos, event.pos)
+            if event.button == 1 and o:
+                if l in ("rect", "square", "circle", "right_triangle", "equilateral_triangle", "rhombus"):
+                    w(k, l, m, n, p, event.pos)
 
-                drawing = False
-                start_pos = None
-                last_pos = None
+                o = False
+                p = None
+                q = None
 
-    # -----------------------------
-    # Отрисовка интерфейса
-    # -----------------------------
-    screen.fill((230, 230, 230))
+    h.fill((230, 230, 230))
+    pygame.draw.rect(h, (245, 245, 245), (0, 0, a, g))
+    pygame.draw.line(h, (180, 180, 180), (0, g), (a, g), 1)
 
-    # Верхняя панель
-    pygame.draw.rect(screen, (245, 245, 245), (0, 0, WIDTH, TOP_PANEL_H))
-    pygame.draw.line(screen, (180, 180, 180), (0, TOP_PANEL_H), (WIDTH, TOP_PANEL_H), 1)
+    t()
 
-    draw_palette()
+    s("1-кисть  2-прямоугольник  3-квадрат  4-пр.треуг.  5-равн.треуг.  6-ромб  7-круг  8-ластик", 10, 44)
+    s("C - очистить   +/- - размер кисти", 10, 20)
+    s(f"Режим: {l}", 620, 20)
 
-    # Подсказки
-    draw_text("1-кисть  2-прямоугольник  3-квадрат  4-пр.треуг.  5-равн.треуг.  6-ромб  7-круг  8-ластик", 10, 44)
-    draw_text("C - очистить   +/- - размер кисти", 10, 20)
+    h.blit(k, (0, 0))
 
-    # Холст
-    screen.blit(canvas, (0, 0))
-
-    # Предпросмотр фигуры при перетаскивании мыши
-    if drawing and mode in ("rect", "square", "circle", "right_triangle", "equilateral_triangle", "rhombus") and start_pos is not None:
-        temp = screen.copy()
-        draw_shape(temp, mode, current_color, brush_size, start_pos, current_mouse_pos)
-        screen.blit(temp, (0, 0))
-
-    # Текущий режим
-    mode_text = {
-        "brush": "Режим: кисть",
-        "rect": "Режим: прямоугольник",
-        "square": "Режим: квадрат",
-        "right_triangle": "Режим: прямоугольный треугольник",
-        "equilateral_triangle": "Режим: равносторонний треугольник",
-        "rhombus": "Режим: ромб",
-        "circle": "Режим: круг",
-        "eraser": "Режим: ластик"
-    }
-    draw_text(mode_text[mode], 620, 20)
+    if o and l in ("rect", "square", "circle", "right_triangle", "equilateral_triangle", "rhombus") and p is not None:
+        temp = h.copy()
+        w(temp, l, m, n, p, r)
+        h.blit(temp, (0, 0))
 
     pygame.display.flip()
-    clock.tick(60)
-
-pygame.quit()
-sys.exit()
+    i.tick(60)
