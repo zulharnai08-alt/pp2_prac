@@ -1,34 +1,33 @@
--- ПРОЦЕДУРА 1: Добавление телефона к контакту по его имени
-CREATE OR REPLACE PROCEDURE add_phone(p_contact_name VARCHAR, p_phone VARCHAR, p_type VARCHAR)
+-- Создаем или заменяем функцию поиска контактов
+-- На вход принимаем строку p_query (текст поиска)
+-- Функция возвращает виртуальную ТАБЛИЦУ (TABLE) с четырьмя колонками
+CREATE OR REPLACE FUNCTION search_contacts(p_query TEXT)
+RETURNS TABLE (
+    contact_name VARCHAR,   -- Имя контакта
+    contact_email VARCHAR,  -- Почта
+    group_name VARCHAR,     -- Название группы
+    phone_list TEXT         -- Все телефоны одной строкой
+) 
 LANGUAGE plpgsql AS $$
-DECLARE
-    v_id INT; -- Переменная для хранения ID найденного контакта
 BEGIN
-    -- 1. Ищем ID контакта в таблице contacts, чье имя совпадает с переданным
-    SELECT id INTO v_id FROM contacts WHERE name = p_contact_name;
-    
-    -- 2. Если контакт с таким именем нашелся (v_id не пустой)
-    IF v_id IS NOT NULL THEN
-        -- Вставляем новый номер в таблицу телефонов, привязывая его к найденному ID
-        INSERT INTO phones (contact_id, phone, type) VALUES (v_id, p_phone, p_type);
-    END IF;
-END;
-$$;
-
--- ПРОЦЕДУРА 2: Перенос контакта в группу (с автоматическим созданием группы)
-CREATE OR REPLACE PROCEDURE move_to_group(p_contact_name VARCHAR, p_group_name VARCHAR)
-LANGUAGE plpgsql AS $$
-DECLARE
-    v_group_id INT; -- Переменная для ID группы
-BEGIN
-    -- 1. Пытаемся добавить новую группу. 
-    -- Если группа с таким именем уже есть, 'ON CONFLICT' просто ничего не делает (не выдает ошибку)
-    INSERT INTO groups (name) VALUES (p_group_name) ON CONFLICT (name) DO NOTHING;
-    
-    -- 2. Получаем ID этой группы (неважно, была она создана сейчас или раньше)
-    SELECT id INTO v_group_id FROM groups WHERE name = p_group_name;
-    
-    -- 3. Обновляем запись контакта: меняем его group_id на новый
-    UPDATE contacts SET group_id = v_group_id WHERE name = p_contact_name;
+    -- RETURN QUERY говорит функции вернуть результат выполнения SQL-запроса
+    RETURN QUERY
+    SELECT 
+        c.name, 
+        c.email, 
+        g.name, 
+        -- string_agg склеивает все найденные номера телефонов в одну строку через запятую
+        string_agg(p.phone, ', ')
+    FROM contacts c
+    -- Используем LEFT JOIN, чтобы контакт отображался, даже если у него нет группы или телефона
+    LEFT JOIN groups g ON c.group_id = g.id
+    LEFT JOIN phones p ON c.id = p.contact_id
+    -- ILIKE — это поиск без учета регистра. 
+    -- Оператор || склеивает % (символ любого количества знаков) с поисковым запросом
+    WHERE c.name ILIKE '%' || p_query || '%' 
+       OR c.email ILIKE '%' || p_query || '%' 
+       OR p.phone ILIKE '%' || p_query || '%'
+    -- Группируем по ID контакта и имени группы, чтобы string_agg сработал правильно
+    GROUP BY c.id, g.name;
 END;
 $$;
