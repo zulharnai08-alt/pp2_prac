@@ -1,27 +1,27 @@
 [
     {
-        "name": "pp",
-        "score": 13,
-        "distance": 829
+        "name": "pp",        // имя игрока
+        "score": 13,         // набранные очки
+        "distance": 829      // пройденная дистанция
     },
     {
-        "name": "diar",
-        "score": 10,
-        "distance": 269
+        "name": "diar",      
+        "score": 10,         
+        "distance": 269      
     },
     {
-        "name": "ter",
-        "score": 3,
-        "distance": 237
+        "name": "ter",       
+        "score": 3,          
+        "distance": 237     
     },
     {
-        "name": "race",
-        "score": 2,
-        "distance": 269
+        "name": "race",      
+        "score": 2,        
+        "distance": 269      
     },
     {
-        "name": "pp",
-        "score": 2,
-        "distance": 160
+        "name": "pp",        
+        "score": 2,          
+        "distance": 160      
     }
 ]
