@@ -1,9 +1,5 @@
 {
-  "snake_color": [
-    0,
-    255,
-    0
-  ],
-  "grid_overlay": true,
-  "sound": true
+  "snake_color": [0, 255, 0],   # RGB цвет змейки (зелёный)
+  "grid_overlay": true,         # включена сетка на поле
+  "sound": true                 # звук включён
 }
