@@ -6,56 +6,61 @@ class Database:
         self.conn = psycopg2.connect(
             dbname="snake_db",
             user="postgres",
-            password="1234",
+            password="1234",  # ⚠️ хардкод пароля (лучше вынести в env)
             host="localhost"
         )
         self.cursor = self.conn.cursor()
-        self._create_tables()
+        self._create_tables()  # автоматическое создание таблиц при запуске
 
     def _create_tables(self):
         self.cursor.execute("""
             CREATE TABLE IF NOT EXISTS players (
                 id       SERIAL PRIMARY KEY,
-                username VARCHAR(50) UNIQUE NOT NULL
+                username VARCHAR(50) UNIQUE NOT NULL  -- уникальность игрока
             );
         """)
         self.cursor.execute("""
             CREATE TABLE IF NOT EXISTS game_sessions (
                 id            SERIAL PRIMARY KEY,
-                player_id     INTEGER REFERENCES players(id),
+                player_id     INTEGER REFERENCES players(id),  -- связь с игроком
                 score         INTEGER   NOT NULL,
                 level_reached INTEGER   NOT NULL,
-                played_at     TIMESTAMP DEFAULT NOW()
+                played_at     TIMESTAMP DEFAULT NOW()  -- авто-время записи
             );
         """)
-        self.conn.commit()
+        self.conn.commit()  # фиксируем изменения в БД
 
     def get_or_create_player(self, username):
         """Возвращает id игрока, создаёт если не существует"""
         self.cursor.execute(
             "INSERT INTO players (username) VALUES (%s) ON CONFLICT (username) DO NOTHING",
             (username,)
-        )
+        )  # безопасная вставка без дубликатов
+
         self.conn.commit()
-        self.cursor.execute("SELECT id FROM players WHERE username = %s", (username,))
-        return self.cursor.fetchone()[0]
+
+        self.cursor.execute(
+            "SELECT id FROM players WHERE username = %s", (username,)
+        )  # получение id после вставки
+
+        return self.cursor.fetchone()[0]  # ⚠️ упадёт если вдруг None
 
     def save_session(self, player_id, score, level):
         """Сохраняет результат игровой сессии"""
         self.cursor.execute(
             "INSERT INTO game_sessions (player_id, score, level_reached) VALUES (%s, %s, %s)",
             (player_id, score, level)
-        )
+        )  # запись результата
         self.conn.commit()
 
     def get_top_10(self):
         """Возвращает топ-10 результатов всех игроков"""
         self.cursor.execute("""
             SELECT p.username, s.score, s.level_reached,
-                   TO_CHAR(s.played_at, 'DD.MM.YY HH24:MI')
+                   TO_CHAR(s.played_at, 'DD.MM.YY HH24:MI')  -- формат даты на уровне SQL
             FROM game_sessions s
             JOIN players p ON s.player_id = p.id
-            ORDER BY s.score DESC
+            ORDER BY s.score DESC  -- сортировка по очкам
             LIMIT 10
         """)
         return self.cursor.fetchall()
@@ -65,10 +70,11 @@ class Database:
         self.cursor.execute(
             "SELECT MAX(score) FROM game_sessions WHERE player_id = %s",
             (player_id,)
-        )
+        )  # агрегатная функция
+
         result = self.cursor.fetchone()[0]
-        return result if result else 0
+        return result if result else 0  # защита от None
 
     def close(self):
         self.cursor.close()
-        self.conn.close()
+        self.conn.close()  # корректное закрытие соединения
