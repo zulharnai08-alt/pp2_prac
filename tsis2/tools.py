@@ -62,19 +62,16 @@ def flood_fill(surface, pos, new_color):
         return
     
     w, h = surface.get_size()  # размеры холста для проверки границ
-    queue = [pos]               # очередь пикселей для обхода (алгоритм bfs)
+    queue = [pos]               # очередь пикселей для обхода 
     surface.set_at(pos, new_color)  # закрашиваем стартовый пиксель
 
     while queue:
         curr_x, curr_y = queue.pop(0)  # берём следующий пиксель из очереди
 
-        # проверяем 4 соседа: вниз, вверх, вправо, влево
+        # проверяем 4 раза: вниз, вверх, вправо, влево
         for dx, dy in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
             x, y = curr_x + dx, curr_y + dy
             if 0 <= x < w and 0 <= y < h:  # не выходим за границы холста
                 if surface.get_at((x, y)) == target_color:  # цвет совпадает с исходным
                     surface.set_at((x, y), new_color)  # закрашиваем
                     queue.append((x, y))               # добавляем в очередь
-
-        if len(queue) > 50000:  # защита от зависания на больших областях
-            break
