@@ -2,16 +2,16 @@ import pygame
 import sys
 import math
 
-# -----------------------------
+
 # Настройки окна
-# -----------------------------
+
 WIDTH, HEIGHT = 900, 600
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 
-# -----------------------------
+
 # Палитра цветов
-# -----------------------------
+
 PALETTE = [
     ("red", (220, 50, 50)),
     ("green", (50, 180, 80)),
@@ -24,9 +24,9 @@ PALETTE = [
 PALETTE_BOX_SIZE = 32
 TOP_PANEL_H = 70
 
-# -----------------------------
+
 # Инициализация pygame
-# -----------------------------
+
 pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Paint")
@@ -38,9 +38,8 @@ font = pygame.font.SysFont("Arial", 18)
 canvas = pygame.Surface((WIDTH, HEIGHT))
 canvas.fill(WHITE)
 
-# -----------------------------
 # Состояние программы
-# -----------------------------
+
 mode = "brush"  # brush, rect, square, right_triangle, equilateral_triangle, rhombus, circle, eraser
 current_color = (0, 0, 255)
 brush_size = 6
@@ -50,10 +49,7 @@ start_pos = None
 last_pos = None
 current_mouse_pos = None
 
-
-# -----------------------------
 # Вспомогательные функции
-# -----------------------------
 def draw_text(text, x, y, color=BLACK):
     """Рисует текст на экране."""
     img = font.render(text, True, color)
