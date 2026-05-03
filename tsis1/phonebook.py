@@ -152,6 +152,7 @@ def import_from_json():
                     # проверяем, существует ли уже такой контакт
                     cur.execute("SELECT id FROM contacts WHERE name = %s", (item['name'],))
                     exists = cur.fetchone()
+                    #берёт первую найденную строку
                     if exists:
                         ans = input(f"'{item['name']}' already exists. Overwrite? (y/n): ").lower()
                         if ans != 'y':
