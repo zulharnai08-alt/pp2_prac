@@ -47,7 +47,7 @@ class Enemy(pygame.sprite.Sprite):
         super().__init__()
         # изоброжание
         self.image = pygame.image.load(ENEMY_PATH)
-        # получение прямоугольника изображения
+        # получение изображения
         self.rect = self.image.get_rect()
         # устоновка позиции
         self.rect.center = (random.randint(40, SCREEN_WIDTH - 40), -100)
