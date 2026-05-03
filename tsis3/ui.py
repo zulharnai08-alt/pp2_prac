@@ -1,53 +1,60 @@
 import pygame
 
 
-def draw_text(surface, text, size, x, y, color=(0, 0, 0)):
-    font = pygame.font.SysFont("Verdana", size)  # создание шрифта (каждый вызов — новая инициализация)
-    text_surface = font.render(text, True, color)
-    text_rect = text_surface.get_rect(center=(x, y))  # центрирование текста
-    surface.blit(text_surface, text_rect)
+def draw_text(surface, text, size, x, y, color=(255, 255, 255), bold=False):
+    """рисует текст по центру координаты x,y"""
+    font = pygame.font.SysFont("Verdana", size, bold=bold)
+    surf = font.render(text, True, color)
+    rect = surf.get_rect(center=(x, y))
+    surface.blit(surf, rect)
 
 
 class Button:
-    def __init__(self, x, y, width, height, text, color=(200, 200, 200)):
-        self.rect = pygame.Rect(x - width//2, y, width, height)  # прямоугольник кнопки (центр по X)
-        self.text = text
-        self.color = color
+    def __init__(self, x, y, width, height, text,
+                 color=(60, 60, 80), hover_color=(100, 100, 130), text_color=(255, 255, 255)):
+        # rect по центру x
+        self.rect        = pygame.Rect(x - width // 2, y, width, height)
+        self.text        = text
+        self.color       = color
+        self.hover_color = hover_color
+        self.text_color  = text_color
 
     def draw(self, surface):
-        pygame.draw.rect(surface, self.color, self.rect)  # отрисовка кнопки
-        pygame.draw.rect(surface, (0, 0, 0), self.rect, 2)  # рамка
-        draw_text(surface, self.text, 25, self.rect.centerx, self.rect.centery)
+        """рисует кнопку, подсвечивает при наведении мыши"""
+        mouse = pygame.mouse.get_pos()
+        col   = self.hover_color if self.rect.collidepoint(mouse) else self.color
+        pygame.draw.rect(surface, col, self.rect, border_radius=8)
+        pygame.draw.rect(surface, (200, 200, 200), self.rect, 2, border_radius=8)  # рамка
+        draw_text(surface, self.text, 22, self.rect.centerx, self.rect.centery, self.text_color)
 
     def is_clicked(self, pos):
-        return self.rect.collidepoint(pos)  # проверка клика внутри кнопки
+        """возвращает True если кликнули на кнопку"""
+        return self.rect.collidepoint(pos)
 
 
 def input_name_screen(screen, width, height):
-    name = ""
-    active = True
+    """экран ввода имени перед игрой, возвращает строку с именем"""
+    name  = ""
+    clock = pygame.time.Clock()
 
-    while active:
-        screen.fill((255, 255, 255))  # очистка экрана каждый кадр
-
-        draw_text(screen, "ENTER YOUR NAME:", 30, width//2, height//2 - 50)
-        draw_text(screen, name + "|", 40, width//2, height//2, (0, 0, 255))  # курсор в виде "|"
+    while True:
+        screen.fill((20, 20, 40))
+        draw_text(screen, "enter your name:", 30, width // 2, height // 2 - 60)
+        # отображаем введённое имя с курсором
+        draw_text(screen, name + "|", 42, width // 2, height // 2, (80, 180, 255), bold=True)
+        draw_text(screen, "press enter to start", 18, width // 2, height // 2 + 60, (150, 150, 150))
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                pygame.quit(); exit()  # полный выход из игры
-
+                pygame.quit()
+                exit()
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RETURN and name.strip():
-                    active = False  # завершение ввода имени
-
+                    return name.strip()  # подтверждение
                 elif event.key == pygame.K_BACKSPACE:
-                    name = name[:-1]  # удаление символа
+                    name = name[:-1]  # удаление последнего символа
+                elif len(name) < 12 and event.unicode.isalnum():
+                    name += event.unicode  # только буквы и цифры, лимит 12
 
-                else:
-                    if len(name) < 10 and event.unicode.isalnum():
-                        name += event.unicode  # ввод только букв/цифр + лимит длины
-
-        pygame.display.update()  # обновление экрана
-
-    return name
+        pygame.display.flip()
+        clock.tick(60)
