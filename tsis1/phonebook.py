@@ -77,7 +77,7 @@ def interactive_nav():
         with get_connection() as conn:
             with conn.cursor() as cur:
                 cur.execute(
-                    # f-строка для подстановки колонки сортировки (нельзя через %s)
+                    # f-строка для подстановки колонки сортировки 
                     f"SELECT name, email, birthday FROM contacts"
                     f" ORDER BY {sort_col} LIMIT %s OFFSET %s",
                     (limit, offset)
