@@ -237,7 +237,7 @@ while running:
 
         #
         if event.type == pygame.MOUSEBUTTONDOWN:
-            # попал ли клик в палитру проверька 
+            # попал ли клик в палитру проверка 
             chosen_color = get_palette_color(event.pos)
             #  если кликнул меняется цвет кисти 
             if chosen_color is not None:
