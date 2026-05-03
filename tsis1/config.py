@@ -1,7 +1,6 @@
-# Твои параметры подключения
 params = {
-    "host": "localhost",
-    "database": "TSIS1",  
-    "user": "postgres",
-    "password": "appple13"
+    "host": "localhost",      # адрес сервера БД (локальный компьютер)
+    "database": "TSIS1",      # название базы данных
+    "user": "postgres",       # имя пользователя PostgreSQL
+    "password": "1234"        # пароль
 }
