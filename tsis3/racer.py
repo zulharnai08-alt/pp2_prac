@@ -1,148 +1,146 @@
 import pygame
 import random
+import os
 
-# ===================== ИГРОК =====================
+# папка с картинками — та же где лежат скрипты
+ASSET_DIR = r"C:\Users\zulha\cod\python"
+
+def load_img(filename, size=None):
+    """загружает картинку, масштабирует если нужно"""
+    path = os.path.join(ASSET_DIR, filename)
+    try:
+        img = pygame.image.load(path).convert_alpha()
+        if size:
+            img = pygame.transform.scale(img, size)
+        return img
+    except Exception as e:
+        print(f"не удалось загрузить {filename}: {e}")
+        surf = pygame.Surface(size or (40, 60), pygame.SRCALPHA)
+        surf.fill((200, 200, 200))
+        return surf
+
+
+# ===================== игрок =====================
 class Player(pygame.sprite.Sprite):
-    def __init__(self, img_path):
+    def __init__(self, color="Blue"):
         super().__init__()
-
-        # Загружаем картинку машины
-        try:
-            self.image = pygame.image.load(img_path).convert_alpha()
-        except:
-            # Если не загрузилось — будет синий прямоугольник
-            self.image = pygame.Surface((40, 60))
-            self.image.fill((0, 0, 255))
-
-        # Позиция машины
-        self.rect = self.image.get_rect()
-        self.rect.center = (200, 520)
+        # Player.png = синяя, Player2.png = оранжевая, Player3.png = фиолетовая
+        color_map = {
+            "Blue":   "Player.png",
+            "Orange": "Player2.png",
+            "Purple": "Player3.png",
+        }
+        filename = color_map.get(color, "Player.png")
+        self.image = load_img(filename, (40, 70))
+        self.rect  = self.image.get_rect(center=(200, 520))
 
     def move(self):
-        # Управление стрелками
+        """движение стрелками влево/вправо"""
         keys = pygame.key.get_pressed()
-
-        if self.rect.left > 0 and keys[pygame.K_LEFT]:
+        if self.rect.left > 20 and keys[pygame.K_LEFT]:
             self.rect.move_ip(-5, 0)
-
-        if self.rect.right < 400 and keys[pygame.K_RIGHT]:
+        if self.rect.right < 380 and keys[pygame.K_RIGHT]:
             self.rect.move_ip(5, 0)
 
 
-# ===================== ВРАГ =====================
+# ===================== враг =====================
 class Enemy(pygame.sprite.Sprite):
-    def __init__(self, img_path):
+    def __init__(self):
         super().__init__()
-
-        try:
-            self.image = pygame.image.load(img_path).convert_alpha()
-        except:
-            self.image = pygame.Surface((40, 60))
-            self.image.fill((255, 0, 0))
-
-        self.rect = self.image.get_rect()
+        self.image = load_img("Enemy.png", (40, 70))
+        self.rect  = self.image.get_rect()
         self.reset()
 
     def move(self, speed):
-        # Движение вниз
+        """возвращает True если враг уехал вниз (обогнал = очко)"""
         self.rect.move_ip(0, speed)
-
-        # Если вышел за экран — вернуть вверх
         if self.rect.top > 600:
-            self.reset()
-            return True  # даём очко
+            return True  # сигнал для main.py — нужен ресет
         return False
 
-    def reset(self):
-        # Случайная позиция сверху
-        self.rect.center = (
-            random.randint(40, 360),
-            random.randint(-400, -100)
-        )
+    def reset(self, others=None, min_dist=80):
+        """спавнит врага, стараясь не ставить слишком близко к другим.
+        others — список всех врагов для проверки расстояния.
+        min_dist — минимальное расстояние в пикселях между центрами."""
+        for _ in range(30):  # максимум 30 попыток найти свободное место
+            x = random.randint(40, 360)
+            y = random.randint(-500, -100)
+
+            if others is None:
+                break  # нет других врагов — просто ставим
+
+            # проверяем расстояние до каждого другого врага
+            too_close = False
+            for other in others:
+                if other is self:
+                    continue  # пропускаем самого себя
+                dist_x = abs(other.rect.centerx - x)
+                dist_y = abs(other.rect.centery - y)
+                if dist_x < min_dist and dist_y < min_dist:
+                    too_close = True
+                    break  # слишком близко — пробуем новую позицию
+
+            if not too_close:
+                break  # нашли подходящее место — выходим из цикла
+
+        self.rect.center = (x, y)
 
 
-# ===================== МОНЕТЫ =====================
+# ===================== монеты =====================
 class Coin(pygame.sprite.Sprite):
-    def __init__(self, img1, img2):
+    def __init__(self):
         super().__init__()
-
-        try:
-            # Обычная монета
-            self.img_small = pygame.image.load(img1).convert_alpha()
-            # Красная (дороже)
-            self.img_red = pygame.image.load(img2).convert_alpha()
-        except:
-            self.img_small = pygame.Surface((20, 20))
-            self.img_small.fill((255, 255, 0))
-            self.img_red = pygame.Surface((20, 20))
-            self.img_red.fill((255, 0, 0))
-
+        self.img_normal = load_img("coin.png",  (24, 24))   # обычная — 1 очко
+        self.img_red    = load_img("coin1.png", (24, 24))   # красная — 3 очка
         self.reset()
 
     def move(self, speed):
         self.rect.move_ip(0, speed)
-
         if self.rect.top > 600:
             self.reset()
 
     def reset(self):
-        # Случайный тип монеты
-        if random.randint(0, 1):
-            self.image = self.img_red
-            self.weight = 3  # больше очков
+        if random.randint(0, 3) == 0:   # 25% шанс красной монеты
+            self.image  = self.img_red
+            self.weight = 3
         else:
-            self.image = self.img_small
+            self.image  = self.img_normal
             self.weight = 1
-
         self.rect = self.image.get_rect(
-            center=(random.randint(40, 360), random.randint(-300, -50))
+            center=(random.randint(40, 360), random.randint(-400, -50))
         )
 
 
-# ===================== МАСЛО (препятствие) =====================
+# ===================== препятствие (масло) =====================
 class Obstacle(pygame.sprite.Sprite):
-    def __init__(self, img_path):
+    def __init__(self):
         super().__init__()
-
-        try:
-            self.image = pygame.image.load(img_path).convert_alpha()
-        except:
-            self.image = pygame.Surface((40, 40))
-            self.image.fill((0, 0, 0))
-
-        self.rect = self.image.get_rect()
+        self.image = load_img("oil.png", (40, 40))
+        self.rect  = self.image.get_rect()
         self.reset()
 
     def move(self, speed):
         self.rect.move_ip(0, speed)
-
         if self.rect.top > 600:
             self.reset()
 
     def reset(self):
         self.rect.center = (
             random.randint(40, 360),
-            random.randint(-1500, -500)
+            random.randint(-1500, -600)
         )
 
 
-# ===================== НИТРО =====================
+# ===================== нитро полоса =====================
 class NitroStrip(pygame.sprite.Sprite):
-    def __init__(self, img_path):
+    def __init__(self):
         super().__init__()
-
-        try:
-            self.image = pygame.image.load(img_path).convert_alpha()
-        except:
-            self.image = pygame.Surface((40, 40))
-            self.image.fill((0, 255, 0))
-
-        self.rect = self.image.get_rect()
+        self.image = load_img("nitro.png", (50, 25))
+        self.rect  = self.image.get_rect()
         self.reset()
 
     def move(self, speed):
         self.rect.move_ip(0, speed)
-
         if self.rect.top > 600:
             self.reset()
 
@@ -153,28 +151,29 @@ class NitroStrip(pygame.sprite.Sprite):
         )
 
 
-# ===================== БОНУСЫ =====================
+# ===================== бонусы =====================
 class PowerUp(pygame.sprite.Sprite):
-    def __init__(self, img_path):
+    TYPES = ["nitro", "shield", "repair"]
+
+    def __init__(self):
         super().__init__()
-
-        try:
-            self.image = pygame.image.load(img_path).convert_alpha()
-        except:
-            self.image = pygame.Surface((30, 30))
-            self.image.fill((255, 255, 255))
-
-        self.rect = self.image.get_rect()
+        self._imgs = {
+            "nitro":  load_img("nitro.png",  (32, 32)),
+            "shield": load_img("shield.png", (32, 32)),
+            "repair": load_img("coin1.png",  (32, 32)),  # заглушка для repair
+        }
+        self.kind = None
         self.reset()
 
     def move(self, speed):
         self.rect.move_ip(0, speed)
-
         if self.rect.top > 600:
             self.reset()
 
     def reset(self):
-        self.rect.center = (
-            random.randint(40, 360),
-            random.randint(-3000, -1000)
+        """случайный тип бонуса при каждом сбросе"""
+        self.kind  = random.choice(self.TYPES)
+        self.image = self._imgs[self.kind]
+        self.rect  = self.image.get_rect(
+            center=(random.randint(40, 360), random.randint(-3000, -1000))
         )
