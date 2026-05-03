@@ -247,7 +247,7 @@ while running:
 
             
             if event.button == 1:
-                # провеька кнопки мыша на  левую стоитли
+                # проверка кнопки мыша на  левую стоитли
                 drawing = True
                 start_pos = event.pos
                 last_pos = event.pos
