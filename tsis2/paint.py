@@ -1,232 +1,171 @@
-import pygameimport sysimport osfrom datetime 
-import datetimefrom tools 
-import draw_shape, flood_fill
+import pygame
+import sys
+import os
+from datetime import datetime
+from tools import draw_shape, flood_fill  # функции рисования из tools.py
 
 def main():
-    pygame.init()  
-
-    screen = pygame.display.set_mode((900, 700))  
+    pygame.init()
+    screen = pygame.display.set_mode((900, 700))  # окно 900x700
+    pygame.display.set_caption("Paint: P:Pencil, R:Rect, Z:Clear, Ctrl+S:Save")
     
+    canvas = pygame.Surface((900, 700))  # отдельный слой для рисования
+    canvas.fill((255, 255, 255))         # белый фон
+    
+    clock = pygame.time.Clock()
+    font = pygame.font.SysFont("Arial", 24)       # шрифт для текстового инструмента
+    small_font = pygame.font.SysFont("Arial", 18) # шрифт для статус-бара
+    
+    color = (0, 0, 0)   # текущий цвет (по умолчанию чёрный)
+    mode = 'pencil'     # текущий инструмент
+    thickness = 2       # толщина линии
+    drawing = False     # зажата ли кнопка мыши
+    start_pos = None    # точка начала фигуры
+    last_pos = None     # предыдущая позиция мыши (для карандаша)
+    
+    text_input = ""     # текст который печатает пользователь
+    text_pos = None     # куда кликнули для текста
+    typing = False      # режим ввода текста активен
 
-    pygame.display.set_caption("Paint: P:Pencil, R:Rect, Z:Clear, Ctrl+S:Save")  
-  
-
-    canvas = pygame.Surface((900, 700))  
-    # Создание поверхности (холста), на которой будем рисовать
-
-    canvas.fill((255, 255, 255))  
-    # Заливаем холст белым цветом
-
-    clock = pygame.time.Clock()  
-    # Объект для контроля FPS (частоты кадров)
-
-    font = pygame.font.SysFont("Arial", 24)  
-    # Шрифт для текста
-
-    small_font = pygame.font.SysFont("Arial", 18)  
-    # Маленький шрифт для интерфейса
-
-    color = (0, 0, 0)  
-    # Текущий цвет (по умолчанию чёрный)
-
-    mode = 'pencil'  
-    # Текущий инструмент (карандаш)
-
-    thickness = 2  
-    # Толщина линии
-
-    drawing = False  
-    # Флаг: рисуем ли сейчас
-
-    start_pos = None  
-    # Начальная позиция мыши
-
-    last_pos = None  
-    # Последняя позиция (для рисования линий)
-
-    text_input = ""  
- 
-
-    text_pos = None  
-    # Позиция текста
-
-    typing = False  
-    # Флаг режима ввода текста
-
-    while True:  
-
-
-        mouse_pos = pygame.mouse.get_pos()  
-        # Получаем текущую позицию мыши
-
-        for event in pygame.event.get():  
-            # Обрабатываем все события (клавиатура, мышь и т.д.)
-
-            if event.type == pygame.QUIT:  
-                # Если нажали на крестик окна
-                pygame.quit()  
-                # Закрываем pygame
-                sys.exit()  
-                # Завершаем программу
-
-            if event.type == pygame.KEYDOWN:  
-                # Если нажата клавиша
-
-                mods = pygame.key.get_mods()  
-                # Получаем модификаторы (Ctrl, Shift и т.д.)
-
-                # --- 1. ОЧИСТКА ЭКРАНА (Z) ---
-                if event.key == pygame.K_z:  
-                    # Если нажали Z
-                    canvas.fill((255, 255, 255))  
-                    # Очищаем холст (заливаем белым)
-                    continue  
-                    # Переходим к следующему событию
-
-                # --- 2. СОХРАНЕНИЕ (Ctrl + S) ---
-                if event.key == pygame.K_s and (mods & pygame.KMOD_CTRL):  
-                    # Если нажали Ctrl+S
-
-                    current_dir = os.path.dirname(os.path.abspath(__file__))  
-                    # Получаем папку, где находится файл
-
-                    filename = f"save_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"  
-                    # Генерируем имя файла с текущим временем
-
-                    full_path = os.path.join(current_dir, filename)  
-                    # Полный путь к файлу
-
-                    pygame.image.save(canvas, full_path)  
-                    # Сохраняем изображение холста
-
-                    print(f"Сохранено: {full_path}")  
-                    # Выводим путь сохранения
-
-                    continue  
-
-                # --- ВВОД ТЕКСТА ---
-                if typing:  
-                    # Если сейчас режим ввода текста
-
-                    if event.key == pygame.K_RETURN:  
-                        # Enter — завершить ввод
-                        txt_surf = font.render(text_input, True, color)  
-                        # Создаём поверхность с текстом
-                        canvas.blit(txt_surf, text_pos)  
-                        # Рисуем текст на холсте
-                        typing = False  
-
-                    elif event.key == pygame.K_ESCAPE:  
-                        # Escape — отмена
-                        typing = False  
-
-                    elif event.key == pygame.K_BACKSPACE:  
-                        # Удаление символа
-                        text_input = text_input[:-1]  
-
-                    else:
-                        text_input += event.unicode  
-                        # Добавляем введённый символ
-
-                    continue  
-
+    while True:
+        mouse_pos = pygame.mouse.get_pos()  # позиция мыши каждый кадр (для превью фигур)
         
-                if event.key == pygame.K_1: color = (255, 0, 0)  # Красный
-                if event.key == pygame.K_2: color = (0, 255, 0)  # Зелёный
-                if event.key == pygame.K_3: color = (0, 0, 255)  # Синий
-                if event.key == pygame.K_0: color = (0, 0, 0)    # Чёрный
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
 
-                # --- СМЕНА ИНСТРУМЕНТА ---
-                if not (mods & pygame.KMOD_CTRL):  
-                    # Если не зажат Ctrl
+            if event.type == pygame.KEYDOWN:
+                mods = pygame.key.get_mods()  # проверяем зажат ли Ctrl/Shift/Alt
 
-                    if event.key == pygame.K_p: mode = 'pencil'  
-                    if event.key == pygame.K_l: mode = 'line'  
-                    if event.key == pygame.K_g: mode = 'fill'  
-                    if event.key == pygame.K_w: mode = 'text'  
-                    if event.key == pygame.K_r: mode = 'rect'    
-                    if event.key == pygame.K_s: mode = 'square'  
+                # z — очистить холст
+                if event.key == pygame.K_z:
+                    canvas.fill((255, 255, 255))
+                    continue
+
+                # ctrl+s — сохранить в png с временем в названии файла
+                if event.key == pygame.K_s and (mods & pygame.KMOD_CTRL):
+                    current_dir = os.path.dirname(os.path.abspath(__file__))
+                    filename = f"save_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
+                    full_path = os.path.join(current_dir, filename)
+                    pygame.image.save(canvas, full_path)
+                    print(f"Сохранено: {full_path}")
+                    continue
+
+                # обработка ввода текста когда typing=True
+                if typing:
+                    if event.key == pygame.K_RETURN:
+                        txt_surf = font.render(text_input, True, color)
+                        canvas.blit(txt_surf, text_pos)  # печатаем текст на холст
+                        typing = False
+                    elif event.key == pygame.K_ESCAPE:
+                        typing = False                   # отмена
+                    elif event.key == pygame.K_BACKSPACE:
+                        text_input = text_input[:-1]     # удаляем последний символ
+                    else:
+                        text_input += event.unicode      # добавляем символ
+                    continue
+
+                # переключение цвета: 0=чёрный, 1=красный, 2=зелёный, 3=синий
+                if event.key == pygame.K_1: color = (255, 0, 0)
+                if event.key == pygame.K_2: color = (0, 255, 0)
+                if event.key == pygame.K_3: color = (0, 0, 255)
+                if event.key == pygame.K_0: color = (0, 0, 0)
+
+                # переключение инструментов (только если ctrl не зажат)
+                if not (mods & pygame.KMOD_CTRL):
+                    if event.key == pygame.K_p: mode = 'pencil'
+                    if event.key == pygame.K_l: mode = 'line'
+                    if event.key == pygame.K_g: mode = 'fill'
+                    if event.key == pygame.K_w: mode = 'text'
+                    if event.key == pygame.K_r: mode = 'rect'
+                    if event.key == pygame.K_s: mode = 'square'
                     if event.key == pygame.K_c: mode = 'circle'
                     if event.key == pygame.K_e: mode = 'eraser'
                     if event.key == pygame.K_t: mode = 'right_tri'
                     if event.key == pygame.K_u: mode = 'equilat_tri'
                     if event.key == pygame.K_d: mode = 'rhombus'
+                
+                # f1/f2/f3 — толщина линии
+                if event.key == pygame.K_F1: thickness = 2
+                if event.key == pygame.K_F2: thickness = 5
+                if event.key == pygame.K_F3: thickness = 10
 
-                # --- ТОЛЩИНА ---
-                if event.key == pygame.K_F1: thickness = 2  
-                if event.key == pygame.K_F2: thickness = 5  
-                if event.key == pygame.K_F3: thickness = 10  
-
-            # --- МЫШЬ ---
-            if event.type == pygame.MOUSEBUTTONDOWN:  
-                # Нажали кнопку мыши
-
-                if mode == 'fill':  
-                    flood_fill(canvas, event.pos, color)  
-                    # Заливка области
-
-                elif mode == 'text':  
-                    typing = True  
-                    text_pos = event.pos  
-                    text_input = ""  
-
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if mode == 'fill':
+                    flood_fill(canvas, event.pos, color)  # заливка по клику
+                elif mode == 'text':
+                    typing = True
+                    text_pos = event.pos  # запоминаем куда кликнули
+                    text_input = ""
                 else:
-                    drawing = True  
-                    start_pos = event.pos  
-                    last_pos = event.pos  
+                    drawing = True
+                    start_pos = event.pos  # запоминаем начало фигуры
+                    last_pos = event.pos
 
-            if event.type == pygame.MOUSEBUTTONUP:  
-                # Отпустили кнопку мыши
+            if event.type == pygame.MOUSEBUTTONUP:
+                if drawing:
+                    draw_shape(canvas, mode, start_pos, event.pos, color, thickness)  # рисуем финальную фигуру
+                drawing = False
 
-                if drawing:  
-                    draw_shape(canvas, mode, start_pos, event.pos, color, thickness)  
-                    # Рисуем фигуру
+            if event.type == pygame.MOUSEMOTION:
+                if drawing and mode == 'pencil':
+                    pygame.draw.line(canvas, color, last_pos, event.pos, thickness)  # карандаш — линия между позициями
+                    last_pos = event.pos
+                elif drawing and mode == 'eraser':
+                    pygame.draw.circle(canvas, (255, 255, 255), event.pos, 20)  # ластик — белый круг
 
-                drawing = False  
-
-            if event.type == pygame.MOUSEMOTION:  
-                # Движение мыши
-
-                if drawing and mode == 'pencil':  
-                    pygame.draw.line(canvas, color, last_pos, event.pos, thickness)  
-                    # Рисуем линию (карандаш)
-                    last_pos = event.pos  
-
-                elif drawing and mode == 'eraser':  
-                    pygame.draw.circle(canvas, (255, 255, 255), event.pos, 20)  
-                    # Ластик (рисуем белым)
-
-        # --- ОТРИСОВКА ---
-        screen.blit(canvas, (0, 0))  
-        # Рисуем холст на экран
-
-        if drawing and mode not in ['pencil', 'fill', 'text', 'eraser']:  
-            draw_shape(screen, mode, start_pos, mouse_pos, color, thickness, is_preview=True)  
-            # Предпросмотр фигуры
-
-        if typing:  
-            temp_txt = font.render(text_input + "|", True, color)  
-            # Показываем вводимый текст
+        screen.blit(canvas, (0, 0))  # выводим холст на экран
+        
+        # превью фигуры пока тянем мышку (рисуется на screen, не на canvas)
+        if drawing and mode not in ['pencil', 'fill', 'text', 'eraser']:
+            draw_shape(screen, mode, start_pos, mouse_pos, color, thickness, is_preview=True)
+            
+        # курсор "|" при вводе текста
+        if typing:
+            temp_txt = font.render(text_input + "|", True, color)
             screen.blit(temp_txt, text_pos)
 
-        pygame.draw.rect(screen, (240, 240, 240), (0, 0, 900, 35))  
-        # Панель сверху
+        # статус-бар сверху
+        pygame.draw.rect(screen, (240, 240, 240), (0, 0, 900, 35))
+        status_text = f"mode: {mode}  |  size: {thickness}  |  z: clear"
+        ui_surf = small_font.render(status_text, True, (60, 60, 60))
+        screen.blit(ui_surf, (15, 7))
 
-        status_text = f"MODE: {mode.upper()}  |  SIZE: {thickness}  |  Z: CLEAR"  
-        # Текст состояния
+        pygame.display.flip()  # обновляем экран
+        clock.tick(120)        # 120 кадров в секунду
 
-        ui_surf = small_font.render(status_text, True, (60, 60, 60))  
-        # Рендер текста
+if __name__ == "__main__":
+    main()
+# Инструменты:
+# P — карандаш (рисует линию пока зажата мышь)
+# L — прямая линия (от точки до точки)
+# R — прямоугольник
+# S — квадрат
+# C — круг
+# T — прямоугольный треугольник
+# U — равносторонний треугольник
+# D — ромб
+# G — заливка (закрашивает область)
+# W — текст (кликаешь на холст и печатаешь)
+# E — ластик (стирает белым кругом)
 
-        screen.blit(ui_surf, (15, 7))  
-        # Отображение текста
+# Цвета:
+# 0 — чёрный
+# 1 — красный
+# 2 — зелёный
+# 3 — синий
 
-        pygame.display.flip()  
-        # Обновление экрана
+# Толщина линии:
+# F1 — тонкая (2px)
+# F2 — средняя (5px)
+# F3 — толстая (10px)
 
-        clock.tick(120)  
-        
+# Прочее:
+# Z      — очистить весь холст (белый фон)
+# Ctrl+S — сохранить холст как .png файл с датой в названии
 
-if __name__ == "__main__":  
-
-    main()  
+# Во время ввода текста (W):
+# Enter     — подтвердить и напечатать текст на холст
+# Escape    — отменить ввод
+# Backspace — удалить последний символ
