@@ -25,10 +25,8 @@ class GameLogic:
     def __init__(self, settings):
         self.settings  = settings
         self.obstacles = []
-
-    # ------------------------------------------------------------------ #
     #  Препятствия                                                         #
-    # ------------------------------------------------------------------ #
+
     def generate_obstacles(self, level, snake_list):
         """Генерирует препятствия начиная с 3-го уровня."""
         if level < 3:
@@ -39,6 +37,7 @@ class GameLogic:
         new_obstacles = []
 
         while len(new_obstacles) < count and attempts < 1000:
+            #генерировать случайные позиции
             attempts += 1
             pos = [
                 random.randrange(0, WIDTH,  CELL),
@@ -59,12 +58,10 @@ class GameLogic:
             pygame.draw.rect(screen, COLOR_OBSTACLE, [obs[0], obs[1], CELL, CELL])
             # Небольшая рамка для объёма
             pygame.draw.rect(screen, (80, 80, 80), [obs[0], obs[1], CELL, CELL], 2)
-
-    # ------------------------------------------------------------------ #
     #  Спавн объектов                                                      #
-    # ------------------------------------------------------------------ #
+
     def spawn_food(self, snake_list):
-        """Возвращает свободную позицию для еды / яда / бонуса."""
+        """Возвращает рандомную позицию для еды / яда / бонуса."""
         for _ in range(500):
             pos = [
                 random.randrange(0, WIDTH,  CELL),
@@ -79,21 +76,18 @@ class GameLogic:
                 if pos not in snake_list and pos not in self.obstacles:
                     return pos
         return [0, 0]   # поле почти заполнено
-
-    # ------------------------------------------------------------------ #
     #  Сетка                                                               #
-    # ------------------------------------------------------------------ #
+
     def draw_grid(self, screen):
         if not self.settings.get("grid_overlay", True):
             return
         for x in range(0, WIDTH, CELL):
+            #рисует сетку поверх экрана
             pygame.draw.line(screen, COLOR_GRID, (x, 0), (x, HEIGHT))
         for y in range(0, HEIGHT, CELL):
             pygame.draw.line(screen, COLOR_GRID, (0, y), (WIDTH, y))
+    #  возвращает цвет в зависимости от типа бонуса                                                #
 
-    # ------------------------------------------------------------------ #
-    #  Отрисовка бонусов                                                   #
-    # ------------------------------------------------------------------ #
     @staticmethod
     def powerup_color(ptype):
         return {
