@@ -2,7 +2,7 @@ import json
 import os
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))  
-# абсолютный путь к папке файла (чтобы настройки всегда сохранялись рядом со скриптом)
+# абсолютный путь к папке файла 
 
 SETTINGS_PATH = os.path.join(BASE_DIR, 'settings1.json')  
 # полный путь к файлу настроек
@@ -12,13 +12,13 @@ DEFAULT_SETTINGS = {
     "snake_color": [0, 255, 0],
     "grid_overlay": True,
     "sound": True
-}  # дефолтные значения (используются при первом запуске и при ошибках)
+}  # дефолтные значения 
 
 
 def load_settings():
     if not os.path.exists(SETTINGS_PATH):
         save_settings(DEFAULT_SETTINGS)  # создаём файл, если его нет
-        return DEFAULT_SETTINGS.copy()  # возвращаем копию (чтобы не менять оригинал)
+        return DEFAULT_SETTINGS.copy()  # возвращаем копию 
 
     try:
         with open(SETTINGS_PATH, 'r', encoding='utf-8') as f:
@@ -27,7 +27,7 @@ def load_settings():
             for key, val in DEFAULT_SETTINGS.items():
                 if key not in data:
                     data[key] = val  
-                    # автоматическое добавление новых настроек (важно при обновлениях)
+                    # автоматическое добавление новых настроек 
 
             return data
 
@@ -41,4 +41,4 @@ def load_settings():
 def save_settings(settings):
     with open(SETTINGS_PATH, 'w', encoding='utf-8') as f:
         json.dump(settings, f, indent=4, ensure_ascii=False)  
-        # сохранение с форматированием и поддержкой unicode
+        # сохранение с форматированием и поддержкой u
