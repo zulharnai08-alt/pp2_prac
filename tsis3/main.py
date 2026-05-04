@@ -51,7 +51,7 @@ def draw_road(speed):
         pygame.draw.rect(SCREEN, LINE_COL, (WIDTH // 2 - 3, y, 6, 35))  # центральная пунктирная линия
 
 
-# --- функция: отрисовка hud (интерфейс поверх игры) ---
+# --- функция: отрисовка интерфейс поверх игры
 def draw_hud(score, coins, distance, finish, speed, active_pu, pu_timer):
     # верхняя тёмная панель с очками, монетами и дистанцией
     pygame.draw.rect(SCREEN, (0, 0, 0, 160), (0, 0, WIDTH, 40))
